@@ -1,4 +1,4 @@
-package com.dws.challenge;
+package com.dws.challenge.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -12,8 +12,6 @@ import com.dws.challenge.exception.AccountNotFoundException;
 import com.dws.challenge.exception.DuplicateAccountIdException;
 import com.dws.challenge.exception.TransferAmountException;
 import com.dws.challenge.repository.AccountsRepository;
-import com.dws.challenge.service.AccountsService;
-import com.dws.challenge.service.NotificationService;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,6 +64,11 @@ class AccountsServiceTest {
   }
   
 
+  /*
+    Should do successful transfer without any deadlock
+    when account ids are shorted lexicographically.
+    Consistent locking ensures no deadlock.
+   */
   @Test
   void transferAmount_success_when_accountIds_shorted_lexicographically() {
     Account payer = new Account("Id-123", BigDecimal.valueOf(200.50));
@@ -87,6 +90,11 @@ class AccountsServiceTest {
     Mockito.verify(notificationService, Mockito.times(2)).notifyAboutTransfer(any(), anyString());
   }
 
+  /*
+    Should do successful transfer without any deadlock
+    when account ids are not shorted lexicographically.
+    Consistent locking ensures no deadlock.
+   */
   @Test
   void transferAmount_success_when_accountIds_not_shorted_lexicographically() {
     Account payer = new Account("Id-456", BigDecimal.valueOf(200.50));
@@ -108,6 +116,10 @@ class AccountsServiceTest {
     Mockito.verify(notificationService, Mockito.times(2)).notifyAboutTransfer(any(), anyString());
   }
 
+  /*
+    Should throw exception if any of the accountId does not exist or no account found with given
+    accountId.
+  */
   @Test
   void transferAmount_should_throw_AccountNotFoundException_if_account_does_not_exists() {
 
@@ -121,6 +133,9 @@ class AccountsServiceTest {
     Mockito.verifyNoInteractions(notificationService);
   }
 
+  /*
+     Should throw exception if account balance is less than the transfer amount to avoid overdraft.
+  */
   @Test
   void transferAmount_should_throw_TransferAmountException_if_payer_balance_is_less() {
     Account payer = new Account("Id-123", BigDecimal.valueOf(20.50));

@@ -1,4 +1,4 @@
-package com.dws.challenge;
+package com.dws.challenge.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -102,13 +102,14 @@ class AccountsControllerTest {
         content().string("{\"accountId\":\"" + uniqueAccountId + "\",\"balance\":123.45}"));
   }
 
+  //Expect 400: BAD Request, when either payer or payee accountId is null.
   @Test
   void test_transferAmount_when_any_accountId_is_null() throws Exception {
 
     var requestBodyWithFromAccountIdNull= """
         {
           "accountToId" : "Id-456",
-          "transferAmount": 50.00
+          "amount": 50.00
         }""";
 
     this.mockMvc.perform(
@@ -119,14 +120,15 @@ class AccountsControllerTest {
         .andExpect(status().isBadRequest());
   }
 
+  //Expect 400: BAD Request, when the amount being transfer is 0.
   @Test
-  void test_transferAmount_when_any_account_is_not_greater_than_zero() throws Exception {
+  void test_transferAmount_when_transfer_account_is_zero() throws Exception {
 
     var requestBodyWithZeroTransferAmount= """
         {
           "accountFromId":"Id-123",
           "accountToId" : "Id-456",
-          "transferAmount": 0
+          "amount": 0
         }""";
 
     this.mockMvc.perform(
@@ -137,8 +139,28 @@ class AccountsControllerTest {
         .andExpect(status().isBadRequest());
   }
 
+  //Expect 400: BAD Request, when the amount being transfer is negative.
   @Test
-  void test_transferAmount() throws Exception {
+  void test_transferAmount_when_transfer_account_is_negative() throws Exception {
+
+    var requestBodyWithNegativeTransferAmount= """
+        {
+          "accountFromId":"Id-123",
+          "accountToId" : "Id-456",
+          "amount": -50.00
+        }""";
+
+    this.mockMvc.perform(
+            post("/v1/accounts/transfer")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBodyWithNegativeTransferAmount)
+        )
+        .andExpect(status().isBadRequest());
+  }
+
+  //Expect 200: OK, when request with valid request body.
+  @Test
+  void test_transferAmount_success() throws Exception {
 
     Account payer = new Account("Id-123", BigDecimal.valueOf(200.50));
     Account payee = new Account("Id-456", BigDecimal.valueOf(100.50));
@@ -150,7 +172,7 @@ class AccountsControllerTest {
         {
           "accountFromId":"Id-123",
           "accountToId" : "Id-456",
-          "transferAmount": 50.00
+          "amount": 50.00
         }""";
 
     var expectedResponseBody = """
