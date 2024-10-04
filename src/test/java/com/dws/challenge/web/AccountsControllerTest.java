@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 
@@ -156,6 +157,64 @@ class AccountsControllerTest {
                 .content(requestBodyWithNegativeTransferAmount)
         )
         .andExpect(status().isBadRequest());
+  }
+
+  //Expect 400: BAD Request, when both accountFromId and accountToId are same.
+  @Test
+  void test_transferAmount_when_both_accountIds_are_same() throws Exception {
+
+    var requestBodyWithSameAccountIds= """
+        {
+          "accountFromId":"Id-123",
+          "accountToId" : "Id-123",
+          "amount": 50.00
+        }""";
+
+    this.mockMvc.perform(
+            post("/v1/accounts/transfer")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBodyWithSameAccountIds)
+        )
+        .andExpect(status().isBadRequest())
+        .andExpect(
+            jsonPath("$.status").value("Failure"))
+        .andExpect(
+            jsonPath("$.code").value(400))
+        .andExpect(
+            jsonPath("$.error").value("Transfer between same account is not allowed."));
+  }
+
+  //Expect 500: Internal Server Error, when transfer amount is bigger than payer's account balance.
+  @Test
+  void test_transferAmount_when_transfer_amount_is_bigger_than_payers_balance() throws Exception {
+
+    Account payer = new Account("Id-123", BigDecimal.valueOf(100.50));
+    Account payee = new Account("Id-456", BigDecimal.valueOf(10.50));
+
+    this.accountsService.createAccount(payer);
+    this.accountsService.createAccount(payee);
+
+    var requestBodyWithBiggerTransferMoneyThanBalance= """
+        {
+          "accountFromId":"Id-123",
+          "accountToId" : "Id-456",
+          "amount": 500.00
+        }""";
+
+
+    this.mockMvc.perform(
+            post("/v1/accounts/transfer")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBodyWithBiggerTransferMoneyThanBalance)
+        )
+        .andExpect(status().isInternalServerError())
+        .andExpect(
+            jsonPath("$.status").value("Failure"))
+        .andExpect(
+            jsonPath("$.code").value(500))
+        .andExpect(
+            jsonPath("$.error").value("Insufficient fund balance in account number : Id-123.")
+        );
   }
 
   //Expect 200: OK, when request with valid request body.

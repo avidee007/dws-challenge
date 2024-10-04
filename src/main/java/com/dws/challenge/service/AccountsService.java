@@ -38,6 +38,8 @@ public class AccountsService {
    */
   public TransferResponse transferAmount(TransferAmountCommand command) {
 
+    validateIfSameAccount(command.accountFromId(),command.accountToId());
+
     BigDecimal amount = command.amount();
     String payerAccountId = command.accountFromId();
     String payeeAccountId = command.accountToId();
@@ -51,7 +53,7 @@ public class AccountsService {
         Account payee = validateAccount(getAccount(payeeAccountId),payeeAccountId);
 
         if (payer.getBalance().compareTo(amount) < 0) {
-          String message = String.format("Insufficient funds in the account in account number : %s.",
+          String message = String.format("Insufficient fund balance in account number : %s.",
               payer.getAccountId());
           log.error(message);
           throw new TransferAmountException(message);
@@ -66,6 +68,15 @@ public class AccountsService {
       log.info("Amount transfer from {} to {} of amount: {} was successful.",
           command.accountFromId(),command.accountToId(),command.amount());
       return new TransferResponse(TransferStatus.SUCCESS, command.amount());
+  }
+
+  private void validateIfSameAccount(String payerAccountId, String payeeAccountId) {
+    if (Objects.equals(payerAccountId,payeeAccountId)) {
+      String message = "Transfer between same account is not allowed.";
+      log.error(message);
+      throw new IllegalArgumentException(message);
+    }
+
   }
 
   private Object getLockObject(String accountNumber) {

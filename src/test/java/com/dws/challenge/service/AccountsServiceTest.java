@@ -117,6 +117,19 @@ class AccountsServiceTest {
   }
 
   /*
+    Should throw exception if both payer and payee accounts are same.
+  */
+  @Test
+  void transferAmount_should_throw_TransferAccountException_if_accountIds_are_same() {
+
+    var transferCommand = new TransferAmountCommand("Id-123", "Id-123", BigDecimal.valueOf(50.00));
+    var illegalArgumentException = assertThrows(IllegalArgumentException.class, () -> accountsService.transferAmount(transferCommand));
+
+    assertEquals("Transfer between same account is not allowed.", illegalArgumentException.getMessage());
+    Mockito.verifyNoInteractions(notificationService);
+  }
+
+  /*
     Should throw exception if any of the accountId does not exist or no account found with given
     accountId.
   */
@@ -151,7 +164,7 @@ class AccountsServiceTest {
     TransferAmountException transferAmountException = assertThrows(TransferAmountException.class,
         () -> accountsService.transferAmount(transferCommand));
 
-    assertEquals("Insufficient funds in the account in account number : Id-123.",
+    assertEquals("Insufficient fund balance in account number : Id-123.",
         transferAmountException.getMessage());
     Mockito.verifyNoInteractions(notificationService);
   }

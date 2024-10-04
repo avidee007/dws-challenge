@@ -35,4 +35,16 @@ class GlobalExceptionHandlerTest {
         responseEntity.getBody()).error());
     Assertions.assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), responseEntity.getBody().code());
   }
+
+  @Test
+  void handleIllegalArgumentException() {
+
+    var illegalArgumentException = new IllegalArgumentException("Transfer between same account is not allowed.");
+    var responseEntity = exceptionHandler.handleIllegalArgumentException(illegalArgumentException);
+
+    Assertions.assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    Assertions.assertEquals("Transfer between same account is not allowed.", Objects.requireNonNull(
+        responseEntity.getBody()).error());
+    Assertions.assertEquals(HttpStatus.BAD_REQUEST.value(), responseEntity.getBody().code());
+  }
 }
