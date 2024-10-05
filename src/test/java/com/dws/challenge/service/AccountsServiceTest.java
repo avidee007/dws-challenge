@@ -120,7 +120,7 @@ class AccountsServiceTest {
     Should throw exception if both payer and payee accounts are same.
   */
   @Test
-  void transferAmount_should_throw_TransferAccountException_if_accountIds_are_same() {
+  void transferAmount_should_throw_IllegalArgumentException_if_accountIds_are_same() {
 
     var transferCommand = new TransferAmountCommand("Id-123", "Id-123", BigDecimal.valueOf(50.00));
     var illegalArgumentException = assertThrows(IllegalArgumentException.class, () -> accountsService.transferAmount(transferCommand));
